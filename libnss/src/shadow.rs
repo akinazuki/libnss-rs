@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use crate::interop::{CBuffer, Response, ToC};
 
+#[derive(Serialize, Deserialize)]
 pub struct Shadow {
     pub name: String,
     pub passwd: String,

@@ -4,14 +4,14 @@ extern crate lazy_static;
 #[macro_use]
 extern crate libnss;
 
-use std::fs;
-
+mod pwd;
 use libnss::group::{Group, GroupHooks};
-use libnss::host::{AddressFamily, Addresses, Host, HostHooks};
+// use libnss::host::{AddressFamily, Addresses, Host, HostHooks};
 use libnss::initgroups::InitgroupsHooks;
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
 use libnss::shadow::{Shadow, ShadowHooks};
+use pwd::*;
 
 struct HardcodedPasswd;
 libnss_passwd_hooks!(nya, HardcodedPasswd);
@@ -20,97 +20,45 @@ libnss_passwd_hooks!(nya, HardcodedPasswd);
 // Ensure the home directory "/home/test" exists, and is owned by 1007:1007
 impl PasswdHooks for HardcodedPasswd {
     fn get_all_entries() -> Response<Vec<Passwd>> {
-        println!(
-            "passwd::get_all_entries() id: {},gid: {}",
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() }
-        );
-        Response::Success(vec![
-            Passwd {
-                name: "test".to_string(),
-                passwd: "x".to_string(),
-                uid: 1005,
-                gid: 1005,
-                gecos: "Test Account".to_string(),
-                dir: "/home/test".to_string(),
-                shell: "/bin/bash".to_string(),
+        match pwd::getpwent() {
+            PasswdVectorResponse::Success(passwd) => {
+                return Response::Success(passwd);
             },
-            Passwd {
-                name: "test2".to_string(),
-                passwd: "x".to_string(),
-                uid: 1006,
-                gid: 1006,
-                gecos: "Test Account".to_string(),
-                dir: "/home/test2".to_string(),
-                shell: "/bin/bash".to_string(),
+            PasswdVectorResponse::NotFound => {
+                return Response::NotFound;
             },
-        ])
+            PasswdVectorResponse::Retry => {
+                return Response::TryAgain;
+            },
+        }
     }
 
     fn get_entry_by_uid(uid: libc::uid_t) -> Response<Passwd> {
-        println!(
-            "passwd::get_entry_by_uid({}) id: {},gid: {}",
-            uid,
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() },
-        );
-        if uid == 1005 {
-            return Response::Success(Passwd {
-                name: "test".to_string(),
-                passwd: "x".to_string(),
-                uid: 1005,
-                gid: 1005,
-                gecos: "Test Account".to_string(),
-                dir: "/home/test".to_string(),
-                shell: "/bin/bash".to_string(),
-            });
+        match pwd::getpwuid(uid) {
+            PasswdResponse::Success(passwd) => {
+                return Response::Success(passwd);
+            },
+            PasswdResponse::NotFound => {
+                return Response::NotFound;
+            },
+            PasswdResponse::Retry => {
+                return Response::TryAgain;
+            },
         }
-        if uid == 1006 {
-            return Response::Success(Passwd {
-                name: "test2".to_string(),
-                passwd: "x".to_string(),
-                uid: 1006,
-                gid: 1006,
-                gecos: "Test Account".to_string(),
-                dir: "/home/test2".to_string(),
-                shell: "/bin/bash".to_string(),
-            });
-        }
-        Response::NotFound
     }
 
     fn get_entry_by_name(name: String) -> Response<Passwd> {
-        println!(
-            "passwd::get_entry_by_name({}) id: {},gid: {}, pid: {}",
-            name,
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() },
-            unsafe { libc::getpid() }
-        );
-        if name == "test" {
-            return Response::Success(Passwd {
-                name: "test".to_string(),
-                passwd: "x".to_string(),
-                uid: 1005,
-                gid: 1005,
-                gecos: "Test Account".to_string(),
-                dir: "/home/test".to_string(),
-                shell: "/bin/bash".to_string(),
-            });
+        match pwd::getpwnam(name) {
+            PasswdResponse::Success(passwd) => {
+                return Response::Success(passwd);
+            },
+            PasswdResponse::NotFound => {
+                return Response::NotFound;
+            },
+            PasswdResponse::Retry => {
+                return Response::TryAgain;
+            },
         }
-        if name == "test2" {
-            return Response::Success(Passwd {
-                name: "test2".to_string(),
-                passwd: "x".to_string(),
-                uid: 1006,
-                gid: 1006,
-                gecos: "Test Account".to_string(),
-                dir: "/home/test2".to_string(),
-                shell: "/bin/bash".to_string(),
-            });
-        }
-
-        Response::NotFound
     }
 }
 
@@ -119,79 +67,45 @@ libnss_group_hooks!(nya, HardcodedGroup);
 
 impl GroupHooks for HardcodedGroup {
     fn get_all_entries() -> Response<Vec<Group>> {
-        println!(
-            "group::get_all_entries() id: {},gid: {}",
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() }
-        );
-        Response::Success(vec![
-            Group {
-                name: "test".to_string(),
-                passwd: "".to_string(),
-                gid: 1005,
-                members: vec!["someone".to_string()],
+        match pwd::getgrent() {
+            GroupVectorResponse::Success(group) => {
+                return Response::Success(group);
             },
-            Group {
-                name: "test2".to_string(),
-                passwd: "".to_string(),
-                gid: 1006,
-                members: vec!["someone".to_string()],
+            GroupVectorResponse::NotFound => {
+                return Response::NotFound;
             },
-        ])
+            GroupVectorResponse::Retry => {
+                return Response::TryAgain;
+            },
+        }
     }
 
     fn get_entry_by_gid(gid: libc::gid_t) -> Response<Group> {
-        println!(
-            "group::get_entry_by_gid({}) id: {},gid: {}",
-            gid,
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() },
-        );
-        if gid == 1005 {
-            return Response::Success(Group {
-                name: "test".to_string(),
-                passwd: "".to_string(),
-                gid: 1005,
-                members: vec!["someone".to_string()],
-            });
+        match pwd::getgrgid(gid) {
+            GroupResponse::Success(group) => {
+                return Response::Success(group);
+            },
+            GroupResponse::NotFound => {
+                return Response::NotFound;
+            },
+            GroupResponse::Retry => {
+                return Response::TryAgain;
+            },
         }
-        if gid == 1006 {
-            return Response::Success(Group {
-                name: "test2".to_string(),
-                passwd: "".to_string(),
-                gid: 1006,
-                members: vec!["someone".to_string()],
-            });
-        }
-
-        Response::NotFound
     }
 
     fn get_entry_by_name(name: String) -> Response<Group> {
-        println!(
-            "group::get_entry_by_name({}) id: {},gid: {}",
-            name,
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() },
-        );
-        if name == "test" {
-            return Response::Success(Group {
-                name: "test".to_string(),
-                passwd: "".to_string(),
-                gid: 1005,
-                members: vec!["someone".to_string()],
-            });
+        match pwd::getgrnam(name) {
+            GroupResponse::Success(group) => {
+                return Response::Success(group);
+            },
+            GroupResponse::NotFound => {
+                return Response::NotFound;
+            },
+            GroupResponse::Retry => {
+                return Response::TryAgain;
+            },
         }
-        if name == "test2" {
-            return Response::Success(Group {
-                name: "test2".to_string(),
-                passwd: "".to_string(),
-                gid: 1006,
-                members: vec!["someone".to_string()],
-            });
-        }
-
-        Response::NotFound
     }
 }
 
@@ -200,74 +114,31 @@ libnss_shadow_hooks!(nya, HardcodedShadow);
 
 impl ShadowHooks for HardcodedShadow {
     fn get_all_entries() -> Response<Vec<Shadow>> {
-        println!(
-            "shadow::get_all_entries() id: {},gid: {}",
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() }
-        );
-        // TODO: Ensure we are a privileged user before returning results
-        Response::Success(vec![
-            Shadow {
-                name: "test".to_string(),
-                passwd: "$6$KEnq4G3CxkA2iU$l/BBqPJlzPvXDfa9ZQ2wUM4fr9CluB.65MLVhLxhjv1jVluZphzY1J6EBtxEa5/n4IDqamJ5cvvek3CtXNYSm1".to_string(),
-                last_change: 12345,
-                change_min_days:0,
-                change_max_days: 99999,
-                change_warn_days: 0,
-                change_inactive_days: -1,
-                expire_date: 99999,
-                reserved: 0,
+        match pwd::getspent() {
+            ShadowVectorResponse::Success(shadow) => {
+                return Response::Success(shadow);
             },
-            Shadow {
-                name: "test2".to_string(),
-                passwd: "$6$KEnq4G3CxkA2iU$l/BBqPJlzPvXDfa9ZQ2wUM4fr9CluB.65MLVhLxhjv1jVluZphzY1J6EBtxEa5/n4IDqamJ5cvvek3CtXNYSm1".to_string(),
-                last_change: 12345,
-                change_min_days:0,
-                change_max_days: 99999,
-                change_warn_days: 0,
-                change_inactive_days: -1,
-                expire_date: 99999,
-                reserved: 0,
-            }
-        ]
-    )
+            ShadowVectorResponse::NotFound => {
+                return Response::NotFound;
+            },
+            ShadowVectorResponse::Retry => {
+                return Response::TryAgain;
+            },
+        }
     }
 
     fn get_entry_by_name(name: String) -> Response<Shadow> {
-        // TODO: Ensure we are a privileged user before returning results
-        println!(
-            "shadow::get_entry_by_name({}) id: {},gid: {}",
-            name,
-            unsafe { libc::getuid() },
-            unsafe { libc::getgid() },
-        );
-        if name == "test" {
-            return Response::Success(Shadow {
-                name: "test".to_string(),
-                passwd: "$6$KEnq4G3CxkA2iU$l/BBqPJlzPvXDfa9ZQ2wUM4fr9CluB.65MLVhLxhjv1jVluZphzY1J6EBtxEa5/n4IDqamJ5cvvek3CtXNYSm1".to_string(),
-                last_change: 12345,
-                change_min_days: 0,
-                change_max_days: 99999,
-                change_warn_days: 0,
-                change_inactive_days: -1,
-                expire_date: 99999,
-                reserved: 0,
-            });
+        match pwd::getspnam(name) {
+            ShadowResponse::Success(shadow) => {
+                return Response::Success(shadow);
+            },
+            ShadowResponse::NotFound => {
+                return Response::NotFound;
+            },
+            ShadowResponse::Retry => {
+                return Response::TryAgain;
+            },
         }
-        if name == "test2" {
-            return Response::Success(Shadow {
-                name: "test2".to_string(),
-                passwd: "$6$KEnq4G3CxkA2iU$l/BBqPJlzPvXDfa9ZQ2wUM4fr9CluB.65MLVhLxhjv1jVluZphzY1J6EBtxEa5/n4IDqamJ5cvvek3CtXNYSm1".to_string(),
-                last_change: 12345,
-                change_min_days: 0,
-                change_max_days: 99999,
-                change_warn_days: 0,
-                change_inactive_days: -1,
-                expire_date: 99999,
-                reserved: 0,
-            });
-        }
-        Response::NotFound
     }
 }
 

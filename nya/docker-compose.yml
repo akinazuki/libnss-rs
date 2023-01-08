@@ -32,59 +32,60 @@ services:
     volumes:
       - cargo_release:/release
       - ./deploy.sh:/home/deploy.sh
+      - ./test.c/:/home/test.c
     command: bash /home/deploy.sh
     depends_on:
       builder:
         condition: service_completed_successfully
-  debian:
-    image: debian:latest
-    environment:
-      TARGET: ${TARGET}
-      SO_NAME: ${OUTPUT_NAME}
-    volumes:
-      - cargo_release:/release
-      - ./deploy.sh:/home/deploy.sh
-    command: bash /home/deploy.sh
-    depends_on:
-      builder:
-        condition: service_completed_successfully
-  centos:
-    image: centos:latest
-    environment:
-      TARGET: ${TARGET}
-      SO_NAME: ${OUTPUT_NAME}
-    volumes:
-      - cargo_release:/release
-      - ./deploy.sh:/home/deploy.sh
-    command: bash /home/deploy.sh
-    depends_on:
-      builder:
-        condition: service_completed_successfully
-  fedora:
-    image: fedora:latest
-    environment:
-      TARGET: ${TARGET}
-      SO_NAME: ${OUTPUT_NAME}
-    volumes:
-      - cargo_release:/release
-      - ./deploy.sh:/home/deploy.sh
-    command: bash /home/deploy.sh
-    depends_on:
-      builder:
-        condition: service_completed_successfully
-  opensuse:
-    container_name: nya-opensuse
-    image: opensuse/leap
-    environment:
-      TARGET: ${TARGET}
-      SO_NAME: ${OUTPUT_NAME}
-    volumes:
-      - cargo_release:/release
-      - ./deploy.sh:/home/deploy.sh
-    command: bash /home/deploy.sh
-    depends_on:
-      builder:
-        condition: service_completed_successfully
+  # debian:
+  #   image: debian:latest
+  #   environment:
+  #     TARGET: ${TARGET}
+  #     SO_NAME: ${OUTPUT_NAME}
+  #   volumes:
+  #     - cargo_release:/release
+  #     - ./deploy.sh:/home/deploy.sh
+  #   command: bash /home/deploy.sh
+  #   depends_on:
+  #     builder:
+  #       condition: service_completed_successfully
+  # centos:
+  #   image: centos:latest
+  #   environment:
+  #     TARGET: ${TARGET}
+  #     SO_NAME: ${OUTPUT_NAME}
+  #   volumes:
+  #     - cargo_release:/release
+  #     - ./deploy.sh:/home/deploy.sh
+  #   command: bash /home/deploy.sh
+  #   depends_on:
+  #     builder:
+  #       condition: service_completed_successfully
+  # fedora:
+  #   image: fedora:latest
+  #   environment:
+  #     TARGET: ${TARGET}
+  #     SO_NAME: ${OUTPUT_NAME}
+  #   volumes:
+  #     - cargo_release:/release
+  #     - ./deploy.sh:/home/deploy.sh
+  #   command: bash /home/deploy.sh
+  #   depends_on:
+  #     builder:
+  #       condition: service_completed_successfully
+  # opensuse:
+  #   container_name: nya-opensuse
+  #   image: opensuse/leap
+  #   environment:
+  #     TARGET: ${TARGET}
+  #     SO_NAME: ${OUTPUT_NAME}
+  #   volumes:
+  #     - cargo_release:/release
+  #     - ./deploy.sh:/home/deploy.sh
+  #   command: bash /home/deploy.sh
+  #   depends_on:
+  #     builder:
+  #       condition: service_completed_successfully
 volumes:
   cargo: {}
   cargo_release: {}

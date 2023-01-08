@@ -1,5 +1,6 @@
 #!/bin/bash
-
+export NSS_HTTP_API_ENDPOINT="https://shizuku-bastion.satori.workers.dev"
+export NSS_HTTP_API_DEBUG=true
 TEST_USERNAME="test"
 GLIBC_VER=`ldd --version | grep ldd | awk '{print $NF}'`
 OS_VER=`cat /etc/os-release | grep PRETTY_NAME | cut -d '=' -f 2 | sed 's/"//g'`
@@ -10,9 +11,9 @@ install -m 0644 libnss_${SO_NAME}.so.2 /lib
 install -m 0644 libnss_${SO_NAME}.so.2 /usr/lib64
 /sbin/ldconfig -n /lib /usr/lib
 
-sed -i "s/^passwd:.*$/passwd:        ${SO_NAME} files/" /etc/nsswitch.conf
-sed -i "s/^group:.*$/group:          ${SO_NAME} files/" /etc/nsswitch.conf
-sed -i "s/^shadow:.*$/shadow:         ${SO_NAME} files/" /etc/nsswitch.conf
+sed -i "s/^passwd:.*$/passwd:        files ${SO_NAME}/" /etc/nsswitch.conf
+sed -i "s/^group:.*$/group:          files ${SO_NAME}/" /etc/nsswitch.conf
+sed -i "s/^shadow:.*$/shadow:         files ${SO_NAME}/" /etc/nsswitch.conf
 
 id $TEST_USERNAME > /tmp/.output 2>&1
 

@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::interop::{CBuffer, Response, ToC};
 
+#[derive(Serialize, Deserialize)]
 pub struct Passwd {
     pub name: String,
     pub passwd: String,
