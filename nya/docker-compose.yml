@@ -26,13 +26,22 @@ services:
       retries: 10
   ubuntu:
     image: ubuntu:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     environment:
       TARGET: ${TARGET}
       SO_NAME: ${OUTPUT_NAME}
+      NSS_HTTP_API_ENDPOINT: "https://shizuku-bastion.satori.workers.dev"
+      NSS_HTTP_API_DEBUG: "true"
+    ports:
+      - "2222:22"
     volumes:
       - cargo_release:/release
       - ./deploy.sh:/home/deploy.sh
       - ./test.c/:/home/test.c
+      - ./sshd_config:/etc/ssh/sshd_config
+      - ~/.ssh/id_rsa.pub:/tmp/authorized_keys
     command: bash /home/deploy.sh
     depends_on:
       builder:

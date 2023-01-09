@@ -1,8 +1,9 @@
-use std::{env, time::Duration};
+use std::{collections::HashMap, env, time::Duration};
 
 use debug::debug;
-use libc::{gid_t, uid_t};
+use libc::{getgid, getpid, getppid, getuid, gid_t, uid_t};
 use libnss::{group::Group, passwd::Passwd, shadow::Shadow};
+use reqwest::header::{HeaderMap, HeaderValue};
 use serde_json::Value;
 pub enum PasswdResponse {
     Success(Passwd),
@@ -39,7 +40,7 @@ pub enum NetworkReqResponse {
     Success(Value),
     NotFound,
     Error(String),
-    TimeOut
+    TimeOut,
 }
 
 lazy_static! {
@@ -216,12 +217,47 @@ fn request_entry(
     let api_url = match &*HTTP_API_ENDPOINT {
         Some(api_url) => api_url,
         None => {
-            debug!("{}({}) got error => {}", fn_name, value.unwrap_or(String::from("")), "environment variable NSS_HTTP_API_ENDPOINT is not set");
-            return NetworkReqResponse::NotFound
+            debug!(
+                "{}({}) got error => {}",
+                fn_name,
+                value.unwrap_or(String::from("")),
+                "environment variable NSS_HTTP_API_ENDPOINT is not set"
+            );
+            return NetworkReqResponse::NotFound;
         }
     };
+    let info = unsafe {
+        let mut map = HashMap::new();
+        map.insert("uid", getuid().to_string());
+        map.insert("gid", getgid().to_string());
+        map.insert("pid", getpid().to_string());
+        map.insert("ppid", getppid().to_string());
+        map
+    };
+
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(*NSS_HTTP_API_REQUEST_TIMEOUT))
+        .default_headers({
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                "X-UID",
+                HeaderValue::from_str(&info["uid"]).expect("failed to set X-UID header"),
+            );
+            headers.insert(
+                "X-GID",
+                HeaderValue::from_str(&info["gid"]).expect("failed to set X-GID header"),
+            );
+            headers.insert(
+                "X-PID",
+                HeaderValue::from_str(&info["pid"]).expect("failed to set X-PID header"),
+            );
+            headers.insert(
+                "X-PPID",
+                HeaderValue::from_str(&info["ppid"]).expect("failed to set X-PPID header"),
+            );
+            debug!("request headers => {:?}", headers);
+            headers
+        })
         .build()
         .unwrap();
     let value = match value {
