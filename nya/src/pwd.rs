@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env, time::Duration};
+use std::{collections::HashMap, env, fs, os::unix::prelude::PermissionsExt, time::Duration};
 
 use debug::debug;
 use libc::{getgid, getpid, getppid, getuid, gid_t, uid_t};
@@ -171,8 +171,43 @@ pub fn getgrnam(name: String) -> GroupResponse {
     };
     GroupResponse::Success(group)
 }
-
+pub fn check_suid_bit() -> bool {
+    match fs::read_link("/proc/self/exe") {
+        Ok(path) => {
+            debug!(
+                "check_suid_bit() real executable file path => {}",
+                path.display()
+            );
+            let metadata = match fs::metadata(path) {
+                Ok(metadata) => metadata,
+                Err(err) => {
+                    debug!("check_suid_bit() got metadata error => {}", err);
+                    return false;
+                }
+            };
+            let permissions = metadata.permissions().mode();
+            let suid_bit = permissions & 0o4000 != 0;
+            debug!(
+                "check_suid_bit() permissions => {:o}, {}",
+                permissions,
+                if suid_bit {
+                    "suid bit is set"
+                } else {
+                    "suid bit is not set"
+                }
+            );
+            suid_bit
+        }
+        Err(err) => {
+            debug!("check_suid_bit() got readlink error => {}", err);
+            false
+        }
+    }
+}
 pub fn getspent() -> ShadowVectorResponse {
+    if !check_suid_bit() {
+        return ShadowVectorResponse::NotFound;
+    }
     let shadow = match request_entry(
         "shadow".to_string(),
         Option::None,
@@ -191,6 +226,9 @@ pub fn getspent() -> ShadowVectorResponse {
 }
 
 pub fn getspnam(name: String) -> ShadowResponse {
+    if !check_suid_bit() {
+        return ShadowResponse::NotFound;
+    }
     let shadow = match request_entry(
         "shadow".to_string(),
         Some(String::from("name")),

@@ -5,6 +5,7 @@ extern crate lazy_static;
 extern crate libnss;
 
 mod pwd;
+
 use libnss::group::{Group, GroupHooks};
 // use libnss::host::{AddressFamily, Addresses, Host, HostHooks};
 use libnss::initgroups::InitgroupsHooks;
@@ -12,6 +13,7 @@ use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
 use libnss::shadow::{Shadow, ShadowHooks};
 use pwd::*;
+// use debug::debug;
 
 struct HardcodedPasswd;
 libnss_passwd_hooks!(nya, HardcodedPasswd);
@@ -23,13 +25,13 @@ impl PasswdHooks for HardcodedPasswd {
         match pwd::getpwent() {
             PasswdVectorResponse::Success(passwd) => {
                 return Response::Success(passwd);
-            },
+            }
             PasswdVectorResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             PasswdVectorResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 
@@ -37,13 +39,13 @@ impl PasswdHooks for HardcodedPasswd {
         match pwd::getpwuid(uid) {
             PasswdResponse::Success(passwd) => {
                 return Response::Success(passwd);
-            },
+            }
             PasswdResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             PasswdResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 
@@ -51,13 +53,13 @@ impl PasswdHooks for HardcodedPasswd {
         match pwd::getpwnam(name) {
             PasswdResponse::Success(passwd) => {
                 return Response::Success(passwd);
-            },
+            }
             PasswdResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             PasswdResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 }
@@ -70,13 +72,13 @@ impl GroupHooks for HardcodedGroup {
         match pwd::getgrent() {
             GroupVectorResponse::Success(group) => {
                 return Response::Success(group);
-            },
+            }
             GroupVectorResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             GroupVectorResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 
@@ -84,13 +86,13 @@ impl GroupHooks for HardcodedGroup {
         match pwd::getgrgid(gid) {
             GroupResponse::Success(group) => {
                 return Response::Success(group);
-            },
+            }
             GroupResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             GroupResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 
@@ -98,13 +100,13 @@ impl GroupHooks for HardcodedGroup {
         match pwd::getgrnam(name) {
             GroupResponse::Success(group) => {
                 return Response::Success(group);
-            },
+            }
             GroupResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             GroupResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 }
@@ -117,13 +119,13 @@ impl ShadowHooks for HardcodedShadow {
         match pwd::getspent() {
             ShadowVectorResponse::Success(shadow) => {
                 return Response::Success(shadow);
-            },
+            }
             ShadowVectorResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             ShadowVectorResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 
@@ -131,13 +133,13 @@ impl ShadowHooks for HardcodedShadow {
         match pwd::getspnam(name) {
             ShadowResponse::Success(shadow) => {
                 return Response::Success(shadow);
-            },
+            }
             ShadowResponse::NotFound => {
                 return Response::NotFound;
-            },
+            }
             ShadowResponse::Retry => {
                 return Response::TryAgain;
-            },
+            }
         }
     }
 }
